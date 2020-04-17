@@ -1,0 +1,24 @@
+{
+  "name": "k-means-clustering",
+  "version": "1.0.0",
+  "description": "K-means clustering",
+  "main": "src/index.js",
+  "author": "Michał Mięculewicz-Wielgus",
+  "scripts": {
+    "build-web": "browserify src/index.js -o dist/index.js -t [ babelify --presets [ env ] ]",
+    "build-cli": "browserify src/index.js --node -o dist/index.js -t [ babelify --presets [ env ] ]",
+    "start": "yarn build-cli && node dist/index.js"
+  },
+  "dependencies": {
+    "babel-core": "^6.26.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babelify": "^8.0.0",
+    "browserify": "^15.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-import": "^2.20.2"
+  }
+}
