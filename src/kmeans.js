@@ -3,20 +3,21 @@
  * @param {Array.<number>} numbersArray
  * @return {number}
  */
-const mean = (numbersArray) => numbersArray
-  .reduce((sum, val) => sum + val, 0) / numbersArray.length;
+const mean = (numbersArray) =>
+  numbersArray.reduce((sum, val) => sum + val, 0) / numbersArray.length;
 
 /**
  * Calculate distance between two points
  * @param {Array.<number>} arrayA
  * @param {Array.<number>} arrayB
- * @return {number}
+ * @returns {number}
  */
-const distance = (arrayA, arrayB) => Math.sqrt(
-  arrayA
-    .map((aPoint, index) => arrayB[index] - aPoint)
-    .reduce((sumOfSquares, diff) => sumOfSquares + (diff * diff), 0),
-);
+const distance = (arrayA, arrayB) =>
+  Math.sqrt(
+    arrayA
+      .map((aPoint, index) => arrayB[index] - aPoint)
+      .reduce((sumOfSquares, diff) => sumOfSquares + diff * diff, 0),
+  );
 
 class KMeans {
   /**
@@ -99,12 +100,55 @@ class KMeans {
 
       for (let dimension = 0; dimension < dimensionality; dimension += 1) {
         const { min, max } = dimensionRanges[dimension];
-        point[dimension] = min + (Math.random() * (max - min));
+        point[dimension] = min + Math.random() * (max - min);
       }
 
       centroids.push(point);
     }
     return centroids;
+  }
+
+  /**
+   * Gets the nearest centroid for given point. Returns boolean that inform if
+   * point relation to centroid has been changed
+   * @param pointIndex
+   * @returns {boolean}
+   */
+  assignPointToCentroid(pointIndex) {
+    const lastAssignedCentroid = this.centroidAssigments[pointIndex];
+    const point = this.data[pointIndex];
+    let minDistance = null;
+    let assignedCentroid = null;
+
+    for (let i = 0; i < this.centroids.length; i += 1) {
+      const centroid = this.centroids[i];
+      const distanceToCentroid = distance((point, centroid));
+
+      if (minDistance === null || distanceToCentroid < minDistance) {
+        minDistance = distanceToCentroid;
+        assignedCentroid = i;
+      }
+    }
+
+    this.centroidAssigments[pointIndex] = assignedCentroid;
+
+    return lastAssignedCentroid !== assignedCentroid;
+  }
+
+  /**
+   * Call assignPoinntToCentroid method for all points of data.
+   * Returns information if for any point assigment has changed.
+   * @see assignPointToCentroid
+   * @returns {boolean}
+   */
+  assignPointsToCentroids() {
+    let didAnyPointGetReassigned = false;
+    for (let i = 0; i < this.data.length; i += 1) {
+      const wasReassigned = this.assignPointToCentroid(i);
+      if (wasReassigned) didAnyPointGetReassigned = true;
+    }
+
+    return didAnyPointGetReassigned;
   }
 }
 export default KMeans;
