@@ -150,5 +150,64 @@ class KMeans {
 
     return didAnyPointGetReassigned;
   }
+
+  /**
+   * For given centroid returns all point assigned to this centroid.
+   * @param centroidInex
+   * @returns {array}
+   */
+  getPointsForCentroid(centroidIndex) {
+    const points = [];
+
+    for (let i = 0; i < this.data.length; i += 1) {
+      const assigment = this.centroidAssigments[i];
+      if (assigment === centroidIndex) {
+        points.push(this.data[i]);
+      }
+    }
+
+    return points;
+  }
+
+  /**
+   * For a given centroids method calculate mean value of sassigned points,
+   * and next use it as new coordinates of centroid.
+   * @see getPointsForCentroid
+   * @param centroidIndex
+   * @returns {array}
+   */
+  updateCentroidLocation(centroidIndex) {
+    const thisCentroidPoints = this.getPointsForCentroid(centroidIndex);
+    const dimensionality = this.getDimensionality;
+    const newCentroid = [];
+
+    for (let i = 0; i < dimensionality; i += 1) {
+      newCentroid[i] = mean(thisCentroidPoints.map((point) => point[i]));
+    }
+
+    this.centroids[centroidIndex] = newCentroid;
+    return newCentroid;
+  }
+
+  /**
+   * Method calls updateCentroidLocation for all centroids
+   */
+  updateCentroidLocations() {
+    for (let i = 0; i < this.centroids.length; i += 1) {
+      this.updateCentroidLocation(i);
+    }
+  }
+
+  /**
+   * Return "error" for actual state of centroids and assignecd points of data.
+   * @returns {number}
+   */
+  callculateError() {
+    let sumDistanceSquared = 0;
+
+    for (let i = 0; i < this.data.length; i += 1) {
+      const centroidIndex = this.centroid[i];
+    }
+  }
 }
 export default KMeans;
