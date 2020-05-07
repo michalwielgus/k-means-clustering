@@ -12,12 +12,14 @@ const mean = (numbersArray) =>
  * @param {Array.<number>} arrayB
  * @returns {number}
  */
-const distance = (arrayA, arrayB) =>
-  Math.sqrt(
+const distance = (arrayA, arrayB) => {
+  testArray = [5, 2];
+  return Math.sqrt(
     arrayA
       .map((aPoint, index) => arrayB[index] - aPoint)
       .reduce((sumOfSquares, diff) => sumOfSquares + diff * diff, 0),
   );
+};
 
 class KMeans {
   /**
@@ -28,6 +30,34 @@ class KMeans {
     this.k = k;
     this.data = data;
     this.reset();
+  }
+
+  /**
+   * Method resolves k-means algorithm until stability state, or until maxIterations is reached
+   *
+   * @param {number}
+   * @returns {object}
+   */
+  solve(maxIterations = 1000) {
+    while (this.iterations < maxIterations) {
+      const didAssigmentChange = this.assignPointsToCentroids();
+      this.updateCentroidLocations();
+      this.calculateError();
+
+      this.iterationLogs[this.iterations] = {
+        centroids: [...this.centroids],
+        iteration: this.iterations,
+        error: this.error,
+        didReachSteadyState: !didAssigmentChange,
+      };
+
+      if (didAssigmentChange === false) {
+        break;
+      }
+
+      this.iterations += 1;
+    }
+    return this.iterationLogs[this.iterationLogs.length - 1];
   }
 
   /**
@@ -206,8 +236,15 @@ class KMeans {
     let sumDistanceSquared = 0;
 
     for (let i = 0; i < this.data.length; i += 1) {
-      const centroidIndex = this.centroid[i];
+      const centroidIndex = this.centroidAssigments[i];
+      const centroid = this.centroids[centroidIndex];
+      const point = this.data[i];
+      const thisDistance = distance(point, centroid);
+      sumDistanceSquared += thisDistance * thisDistance;
     }
+
+    this.error = Math.sqrt(sumDistanceSquared / this.data.length);
+    return this.error;
   }
 }
 export default KMeans;

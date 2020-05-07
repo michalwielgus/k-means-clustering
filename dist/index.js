@@ -6,8 +6,11 @@ Object.defineProperty(exports, "__esModule", {
 });
 var exampleRandomCentroids = [[1, 12, 24], [5, 4, 16], [3, 0, 25]];
 
+var example2d3k = [[1, 2], [2, 3], [2, 5], [1, 6], [4, 6], [3, 5], [2, 4], [4, 3], [5, 2], [6, 9], [4, 4], [3, 3], [8, 6], [7, 5], [9, 6], [9, 7], [8, 8], [7, 9], [11, 3], [11, 2], [9, 9], [7, 8], [6, 8], [12, 2], [14, 3], [15, 1], [15, 4], [14, 2], [13, 1], [16, 4]];
+
 exports.default = {
-  exampleRandomCentroids: exampleRandomCentroids
+  exampleRandomCentroids: exampleRandomCentroids,
+  example2d3k: example2d3k
 };
 
 },{}],2:[function(require,module,exports){
@@ -23,7 +26,7 @@ var _data2 = _interopRequireDefault(_data);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var init = function init() {
+var initialRandomCentroids = function initialRandomCentroids() {
   console.log('K-means clustering');
   console.log('====================================\n');
 
@@ -37,7 +40,20 @@ var init = function init() {
   console.log('\n====================================\n\n');
 };
 
-init();
+var resolve = function resolve() {
+  console.log('Example resolving: 2-dimensional data, 3 clusters:');
+  console.log('====================================\n');
+
+  console.log('Results for example: 2-dimensional data, 3 clusters');
+  console.log('\n====================================\n');
+  var resolver = new _kmeans2.default(3, _data2.default.example2d3k);
+  var centroids = resolver.solve();
+  console.log(centroids);
+  console.log('');
+};
+
+initialRandomCentroids();
+resolve();
 
 },{"./data":1,"./kmeans":3}],3:[function(require,module,exports){
 "use strict";
@@ -47,6 +63,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -65,9 +83,10 @@ var mean = function mean(numbersArray) {
  * Calculate distance between two points
  * @param {Array.<number>} arrayA
  * @param {Array.<number>} arrayB
- * @return {number}
+ * @returns {number}
  */
 var distance = function distance(arrayA, arrayB) {
+  console.log(arrayA, arrayB);
   return Math.sqrt(arrayA.map(function (aPoint, index) {
     return arrayB[index] - aPoint;
   }).reduce(function (sumOfSquares, diff) {
@@ -89,13 +108,46 @@ var KMeans = function () {
   }
 
   /**
-   * Reset initial state of instance.
-   * Use only when you want use the same instance to analyze
-   * the same set of data but with new start conditionals.
+   * Method resolves k-means algorithm until stability state, or until maxIterations is reached
+   *
+   * @param {number}
+   * @returns {object}
    */
 
 
   _createClass(KMeans, [{
+    key: "solve",
+    value: function solve() {
+      var maxIterations = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
+
+      while (this.iterations < maxIterations) {
+        var didAssigmentChange = this.assignPointsToCentroids();
+        this.updateCentroidLocations();
+        this.calculateError();
+
+        this.iterationLogs[this.iterations] = {
+          centroids: [].concat(_toConsumableArray(this.centroids)),
+          iteration: this.iterations,
+          error: this.error,
+          didReachSteadyState: !didAssigmentChange
+        };
+
+        if (didAssigmentChange === false) {
+          break;
+        }
+
+        this.iterations += 1;
+      }
+      return this.iterationLogs[this.iterationLogs.length - 1];
+    }
+
+    /**
+     * Reset initial state of instance.
+     * Use only when you want use the same instance to analyze
+     * the same set of data but with new start conditionals.
+     */
+
+  }, {
     key: "reset",
     value: function reset() {
       this.error = null;
@@ -185,6 +237,139 @@ var KMeans = function () {
         centroids.push(point);
       }
       return centroids;
+    }
+
+    /**
+     * Gets the nearest centroid for given point. Returns boolean that inform if
+     * point relation to centroid has been changed
+     * @param pointIndex
+     * @returns {boolean}
+     */
+
+  }, {
+    key: "assignPointToCentroid",
+    value: function assignPointToCentroid(pointIndex) {
+      var lastAssignedCentroid = this.centroidAssigments[pointIndex];
+      var point = this.data[pointIndex];
+      var minDistance = null;
+      var assignedCentroid = null;
+
+      for (var i = 0; i < this.centroids.length; i += 1) {
+        var centroid = this.centroids[i];
+        var distanceToCentroid = distance((point, centroid));
+
+        if (minDistance === null || distanceToCentroid < minDistance) {
+          minDistance = distanceToCentroid;
+          assignedCentroid = i;
+        }
+      }
+
+      this.centroidAssigments[pointIndex] = assignedCentroid;
+
+      return lastAssignedCentroid !== assignedCentroid;
+    }
+
+    /**
+     * Call assignPoinntToCentroid method for all points of data.
+     * Returns information if for any point assigment has changed.
+     * @see assignPointToCentroid
+     * @returns {boolean}
+     */
+
+  }, {
+    key: "assignPointsToCentroids",
+    value: function assignPointsToCentroids() {
+      var didAnyPointGetReassigned = false;
+      for (var i = 0; i < this.data.length; i += 1) {
+        var wasReassigned = this.assignPointToCentroid(i);
+        if (wasReassigned) didAnyPointGetReassigned = true;
+      }
+
+      return didAnyPointGetReassigned;
+    }
+
+    /**
+     * For given centroid returns all point assigned to this centroid.
+     * @param centroidInex
+     * @returns {array}
+     */
+
+  }, {
+    key: "getPointsForCentroid",
+    value: function getPointsForCentroid(centroidIndex) {
+      var points = [];
+
+      for (var i = 0; i < this.data.length; i += 1) {
+        var assigment = this.centroidAssigments[i];
+        if (assigment === centroidIndex) {
+          points.push(this.data[i]);
+        }
+      }
+
+      return points;
+    }
+
+    /**
+     * For a given centroids method calculate mean value of sassigned points,
+     * and next use it as new coordinates of centroid.
+     * @see getPointsForCentroid
+     * @param centroidIndex
+     * @returns {array}
+     */
+
+  }, {
+    key: "updateCentroidLocation",
+    value: function updateCentroidLocation(centroidIndex) {
+      var thisCentroidPoints = this.getPointsForCentroid(centroidIndex);
+      var dimensionality = this.getDimensionality;
+      var newCentroid = [];
+
+      var _loop = function _loop(i) {
+        newCentroid[i] = mean(thisCentroidPoints.map(function (point) {
+          return point[i];
+        }));
+      };
+
+      for (var i = 0; i < dimensionality; i += 1) {
+        _loop(i);
+      }
+
+      this.centroids[centroidIndex] = newCentroid;
+      return newCentroid;
+    }
+
+    /**
+     * Method calls updateCentroidLocation for all centroids
+     */
+
+  }, {
+    key: "updateCentroidLocations",
+    value: function updateCentroidLocations() {
+      for (var i = 0; i < this.centroids.length; i += 1) {
+        this.updateCentroidLocation(i);
+      }
+    }
+
+    /**
+     * Return "error" for actual state of centroids and assignecd points of data.
+     * @returns {number}
+     */
+
+  }, {
+    key: "callculateError",
+    value: function callculateError() {
+      var sumDistanceSquared = 0;
+
+      for (var i = 0; i < this.data.length; i += 1) {
+        var centroidIndex = this.centroidAssigments[i];
+        var centroid = this.centroids[centroidIndex];
+        var point = this.data[i];
+        var thisDistance = distance(point, centroid);
+        sumDistanceSquared += thisDistance * thisDistance;
+      }
+
+      this.error = Math.sqrt(sumDistanceSquared / this.data.length);
+      return this.error;
     }
   }]);
 
